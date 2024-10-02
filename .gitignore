@@ -1,0 +1,7 @@
+.vs/
+x64/
+obj/*
+bin/*
+*.assets.cache
+Properties/PublishProfiles/*.user
+*.csproj.user

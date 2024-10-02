@@ -1,0 +1,65 @@
+﻿<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<!-- Logging level, see @Logger.LogLevel -->
+		<LogLevel>1</LogLevel>
+		<!-- Absolute path to the dotnet executable -->
+		<DotNetExe>$([System.IO.Path]::GetFullPath("$(MSBuildExtensionsPath64)\..\..\dotnet.exe"))</DotNetExe>
+		<!-- Absolute path to this file -->
+		<InitializeXml>$(MSBuildProjectFullPath)</InitializeXml>
+		<!-- Absolute path to the folder containing the launcher dll -->
+		<LauncherDirectory></LauncherDirectory>
+		<!-- The absolute path to the working directory to use for the injected exe -->
+		<WorkingDirectory>C:\Windows\System32</WorkingDirectory>
+		<!-- The injected exe and command arguments -->
+		<Command>cmd.exe /C echo "Hello World from initialize.xml"</Command>
+		<!-- The pipe for the loggers standard output -->
+		<StdOut>-11</StdOut>
+		<!-- The pipe for the loggers error output -->
+		<StdError>-12</StdError>
+		<!-- The process id of the parent which owns the logging pipe -->
+		<ParentProcessId>0</ParentProcessId>
+		<!-- Semi-colon separated list of absolute directories which will be exempt from being injected, instead loading natively -->
+		<NativeExecutionDirectories>C:\Windows\System32\;M:\Windows\System32\;S:\Windows\System32\;T:\Windows\System32\</NativeExecutionDirectories>
+		<!-- Semi-colon separated list of absolute file paths which will supercede the native loading and force injection -->
+		<NativeExecutionBlockList>C:\Windows\System32\cmd.exe;C:\Windows\System32\conhost.exe</NativeExecutionBlockList>
+	</PropertyGroup>
+
+	<UsingTask
+      TaskName="LaunchTask"
+      TaskFactory="RoslynCodeTaskFactory"
+      AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" >
+		<ParameterGroup>
+			<Command ParameterType="System.String" Required="true" />
+			<LauncherDirectory ParameterType="System.String" Required="false" />
+			<WorkingDirectory ParameterType="System.String" Required="false" />
+			<DotNetExe ParameterType="System.String" Required="false" />
+			<InitializeXml ParameterType="System.String" Required="false" />
+			<StdOut ParameterType="System.Int32" Required="false" />
+			<StdError ParameterType="System.Int32" Required="false" />
+			<ParentProcessId ParameterType="System.Int32" Required="false" />
+			<LogLevel ParameterType="System.Int32" Required="false" />
+			<NativeExecutionDirectories ParameterType="System.String[]" Required="false" />
+			<NativeExecutionBlockList ParameterType="System.String[]" Required="false" />
+		</ParameterGroup>
+		<Task>
+			<Using Namespace="System" />
+			<Using Namespace="System.IO" />
+			<Using Namespace="System.Reflection"/>
+			<Code Type="Fragment" Language="cs">
+<![CDATA[
+			    var dll = File.ReadAllBytes($"{LauncherDirectory}\\Silverton.dll");
+			    var loader = Assembly.Load(dll);
+			    var type = loader.GetType("Silverton.Launcher")!;
+			    var method = type.GetMethod("Launch", BindingFlags.Static | BindingFlags.Public)!;
+			    var res = method.Invoke(null, [LogLevel, InitializeXml, DotNetExe, LauncherDirectory, WorkingDirectory, Command, NativeExecutionDirectories, NativeExecutionBlockList, StdOut, StdError, ParentProcessId]);
+  ]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<Target Name="EntryTarget">
+		<LaunchTask LogLevel="$(LogLevel)" DotNetExe="$(DotNetExe)" InitializeXml="$(InitializeXml)" LauncherDirectory="$(LauncherDirectory)" Command="$(Command)" WorkingDirectory="$(WorkingDirectory)" StdOut="$(StdOut)" StdError="$(StdError)" ParentProcessId="$(ParentProcessId)" NativeExecutionDirectories="$(NativeExecutionDirectories)" NativeExecutionBlockList="$(NativeExecutionBlockList)"/>
+	</Target>
+
+</Project>

@@ -13,8 +13,8 @@ namespace Silverton.Injector.Patchers {
     // Patches GetCommandLineW() & GetCommandLineA()
     // Patches RTL_USER_PROCESS_PARAMETERS ImagePathName & CommandLine
     // Portions based on https://github.com/nettitude/RunPE/blob/main/RunPE/Patchers/ArgumentPatcher.cs
-    public class ArgumentPatcher : IDisposable
-    {
+    public class ArgumentPatcher : IDisposable {
+
         private const int PEB_RTL_USER_PROCESS_PARAMETERS_OFFSET = 0x20; // Offset into the PEB that the RTL_USER_PROCESS_PARAMETERS pointer sits at
         private const int RTL_USER_PROCESS_PARAMETERS_COMMANDLINE_OFFSET = 0x70; // Offset into the RTL_USER_PROCESS_PARAMETERS that the CommandLine sits at https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-rtl_user_process_parameter
         private const int RTL_USER_PROCESS_PARAMETERS_MAX_LENGTH_OFFSET = 2;
@@ -26,15 +26,13 @@ namespace Silverton.Injector.Patchers {
         private IntPtr _pLength;
         private IntPtr _pMaxLength;
 
-        public ArgumentPatcher(string filename, string[] args) {
+        public ArgumentPatcher(string filename, string commandLine) {
 
-            var newCommandLineString = string.Join(" ", args);
+            PatchRtlUserProcessParameters(filename, commandLine);
+            PatchGetCommandLine(commandLine);
+            PatchCLREnvironment(commandLine);
 
-            PatchRtlUserProcessParameters(filename, newCommandLineString);
-            PatchGetCommandLine(newCommandLineString);
-            PatchCLREnvironment(newCommandLineString);
-
-            Logger.Log($"Overwrote GetCommandLine(): {newCommandLineString}", Logger.LogLevel.TRACE);
+            Logger.Log($"Overwrote GetCommandLine(): {commandLine}", Logger.LogLevel.TRACE);
         }
 
         public void Dispose() {

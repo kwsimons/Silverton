@@ -68,7 +68,7 @@ namespace Silverton.Core.Managers {
                 sUsername = userName,
                 sPassword = password,
                 uiPasswordAge = 0,
-                uiPriv = 1, // USER_PRIV_ADMIN (Administrator)
+                uiPriv = 1, // USER_PRIV_USER per MSDN: When you call the NetUserAdd function, this member must be USER_PRIV_USER.
                 sHome_Dir = null,
                 sComment = "xboxacc",
                 uiFlags = 0x0040 | 0x0200, // UF_PASSWD_CANT_CHANGE | UF_NORMAL_ACCOUNT

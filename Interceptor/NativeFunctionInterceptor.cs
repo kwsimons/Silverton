@@ -76,7 +76,7 @@ namespace Silverton.Interceptor {
                         errorCode = e.NativeErrorCode;
                     }
 
-                    Logger.Log($"LoadLibraryW({lpLibFileName}) result: {result} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
+                    Logger.Log($"LoadLibraryW({lpLibFileName}) result: 0x{result:X} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
                     SetLastError((uint)errorCode);
                     return result;
                 } catch (Exception e) {
@@ -103,7 +103,7 @@ namespace Silverton.Interceptor {
                         errorCode = e.NativeErrorCode;
                     }
 
-                    Logger.Log($"LoadLibraryA({lpLibFileName}) result: {result} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
+                    Logger.Log($"LoadLibraryA({lpLibFileName}) result: 0x{result:X} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
                     SetLastError((uint)errorCode);
                     return result;
                 } catch (Exception e) {
@@ -160,7 +160,7 @@ namespace Silverton.Interceptor {
                         errorCode = e.NativeErrorCode;
                     }
 
-                    Logger.Log($"LoadLibraryExA() result: {result} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
+                    Logger.Log($"LoadLibraryExA() result: 0x{result:X} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
                     SetLastError((uint)errorCode);
                     return result;
                 } catch (Exception e) {
@@ -391,7 +391,7 @@ namespace Silverton.Interceptor {
             T interceptFunction = interceptFunctionFactory(dllResolver, nativeFunctionAddress);
             IntPtr hijackedFunctionAddress = Marshal.GetFunctionPointerForDelegate(interceptFunction);
 
-            Logger.Log($"Diverted function address {dllName}!{functionName} from 0x{nativeFunctionAddress:X} to 0x{hijackedFunctionAddress:X}", Logger.LogLevel.DEBUG);
+            Logger.Log($"Diverted function address {dllName}!{functionName} from 0x{nativeFunctionAddress:X} to 0x{hijackedFunctionAddress:X} for module 0x{module:X}", Logger.LogLevel.DEBUG);
 
             // Patch all loaded DLLs Import Address Tables(IAT) references to LoadLibrary / CreateProcess
             PatchImportCalls(dllName, functionName, hijackedFunctionAddress);
@@ -411,7 +411,7 @@ namespace Silverton.Interceptor {
             T interceptFunction = interceptFunctionFactory(newProcessInterceptor, nativeFunctionAddress);
             IntPtr hijackedFunctionAddress = Marshal.GetFunctionPointerForDelegate(interceptFunction);
 
-            Logger.Log($"Diverted function address {dllName}!{functionName} from 0x{nativeFunctionAddress:X} to 0x{hijackedFunctionAddress:X}", Logger.LogLevel.DEBUG);
+            Logger.Log($"Diverted function address {dllName}!{functionName} from 0x{nativeFunctionAddress:X} to 0x{hijackedFunctionAddress:X} for module 0x{module:X}", Logger.LogLevel.DEBUG);
 
             // Patch all loaded DLLs Import Address Tables(IAT) references to LoadLibrary / CreateProcess
             PatchImportCalls(dllName, functionName, hijackedFunctionAddress);

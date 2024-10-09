@@ -7,6 +7,7 @@ using System.Threading;
 using static Silverton.Core.Interop.NativeBridge;
 using Silverton.Interceptor;
 using System.Runtime.Loader;
+using Silverton.Core.Environment;
 
 namespace Silverton.Injector {
 
@@ -74,7 +75,7 @@ namespace Silverton.Injector {
 #nullable disable
         }
 
-        public static void ExecuteAsCLR(NewProcessInterceptor newProcessInterceptor, string dllSearchPath, string fullExePath, List<string> arguments) {
+        public static void ExecuteAsCLR(NewProcessInterceptor newProcessInterceptor, string dllSearchPath, string fullExePath, string command) {
 
             var fullDllPath = Path.Combine(Path.GetDirectoryName(fullExePath), Path.GetFileNameWithoutExtension(fullExePath) + ".dll");
 
@@ -82,7 +83,7 @@ namespace Silverton.Injector {
             var injectedExe = InjectedExe.Write(fullDllPath);
 
             // Create a function invoker to handle patching PEB etc when calling DllMain + TLS Callbacks + Exe entry point function calls
-            var functionInvoker = new NativeFunctionInvoker(GetModuleHandle(null), fullExePath, arguments.ToArray());
+            var functionInvoker = new NativeFunctionInvoker(GetModuleHandle(null), fullExePath, command);
 
             // Create a dll resolver to find and load dlls
             var dllResolver = new DllLoader(dllSearchPath, NativeFunctionInterceptor.GetNativeLoadLibraryAddress(), functionInvoker);
@@ -104,6 +105,7 @@ namespace Silverton.Injector {
             // "Unlike C and C++, the name of the program is not treated as the first command-line argument in the args array"
             // Per https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line#overview
             // TODO: Detect CLR C/C++/C# and make this dynamic
+            var arguments = Parser.ParseArguments(command);
             arguments.RemoveAt(0);
 
             var thread = new Thread(new ThreadStart(() => {

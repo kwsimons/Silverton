@@ -2,7 +2,7 @@
 
 ## Overview
 
-Silverton allows unsigned code execution on a retail Xbox that has been compromised via [Collateral Damage](https://github.com/exploits-forsale/collateral-damage).
+Silverton allows unsigned code execution on a retail Xbox that has been compromised via [Collateral Damage](https://github.com/exploits-forsale/collateral-damage) & [Solstice](https://github.com/exploits-forsale/solstice).
 
 This is performed through the use of the [.NET `msbuild`](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-msbuild) command, a custom PE/Dll injector, native API (`kernelbase`, `advapi32`) interception for LoadLibrary and CreateProcess, and various runtime patches.  Through the use of this tool one can invoke a shell (`cmd.exe`) that is capable of transparently launching and executing unsigned executables (including unsigned Dlls), allowing for rapid development compared to currently used methods.
 
@@ -18,7 +18,8 @@ Devices tested:
 * Xbox One X
 * Xbox Series X
 
-Versions tested:
+Versions supported:
+* `10.0.25398.4908`
 * `10.0.25398.4909`
 * `10.0.25398.4478`
 
@@ -30,7 +31,6 @@ Scenarios tested:
 * `cmd.exe`, `conhost.exe`, `sshd.exe` & `sftp-server.exe` have all been tested and confirmed to work
 
 Known limitations:
-* Xbox OS version `10.0.25398.4908` probably will not work, as it requires modifying the LDR offsets for that particular `ntdll.dll` (which I do not have access to)
 * 32-bit executables or 32-bit Dlls cannot be injected (but can be loaded natively)
 * Attempting to run .NET executables using this tool may encounter strange issues.  In some scenarios, setting the environment variable `CLR_ASSEMBLY_INJECTION` to `FORCE` or `SKIP` may allow for the .NET executable to succeed
 	* This is due to the fact that there are essentially two CLRs, as well as P/Invoke callbacks crossing CLR boundaries.  `CLRInjector.exe` contains logic to attempt to load CLRs natively when possible, but there can be application-specific issues.
@@ -41,7 +41,7 @@ Known limitations:
 1. Download the [.NET 8.0 SDK binaries](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-8.0.402-windows-x64-binaries) and extract them to `xbox\dotnet`
 1. Copy the files in this repositories `payloads` directory to `xbox\payloads`
 1. Package this repository and copy the output to (`Silverton.dll`, etc) to `xbox\payloads\launcher`
-1. *Optionally*, you may [download `Powershell-7.3.12-win-x64.zip`](https://github.com/PowerShell/PowerShell/releases/tag/v7.3.12) and unzip its contents to `xbox\payloads\pwsh`
+1. *Optionally*, you may [download `Powershell-7.3.12-win-x64.zip`](https://github.com/PowerShell/PowerShell/releases/tag/v7.3.12) and unzip its contents to `xbox\pwsh`
 	* NOTE: Powershell 7.4+ will only work with `CLR_ASSEMBLY_INJECTION=SKIP`
 1. Copy the `xbox` directory to the root of your USB drive
 1. Connect the USB drive to your Xbox
@@ -52,7 +52,7 @@ NOTE: If you'd like to install it to a different location (eg `S:\`), see the "C
 
 ## Usage
 
-You will first need to leverage Collateral Damage to gain shell access on the Xbox, then you can issue the commands outlined below.
+You will first need to leverage Collateral Damage & Solstice to gain shell access on the Xbox, then you can issue the commands outlined below.
 
 Spawn a new command prompt (`cmd.exe`) that allows for unsigned binary execution:
 ```
@@ -129,6 +129,13 @@ Yes, the tool intercepts library loading and will first attempt to load the Dll 
 
 Yes, the tool intercepts process creation and will route all new processes through the custom process launcher, allowing for unsigned executables to be spawned.
 
+## How to build
+
+Using .NET SDK 8.0+, invoke the following command:
+```
+dotnet publish /p:PublishProfile=FolderProfile
+```
+
 ## How it works
 
 Let's wait and see if it works first ...
@@ -147,6 +154,7 @@ PE/Dll loader support:
 ## Resources
 
 * https://github.com/exploits-forsale/collateral-damage
+* https://github.com/exploits-forsale/solstice
 * https://landaire.net/reflective-pe-loader-for-xbox/
 * https://xboxoneresearch.github.io
 * https://github.com/nettitude/RunPE
@@ -163,3 +171,4 @@ PE/Dll loader support:
 * Invoke the executable in a new thread
 * Properly detect when a native exe can be invoked without injection
 * Cleanup process pipes
+* CLR `LibraryImportAttribute` is not being hijacked

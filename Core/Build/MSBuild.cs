@@ -56,6 +56,6 @@ namespace Silverton.Core.Build {
         }
 
         // https://github.com/dotnet/msbuild/blob/d17ec720df6ea81145fe462834ba3a68aa19d766/src/Shared/EscapingUtilities.cs#L153
-        private static readonly char[] s_charsToEscape = { '%', '*', '?', '@', '$', '(', ')', ';', '\'' };
+        private static readonly char[] s_charsToEscape = { '%', '*', '?', '@', '$', '(', ')', ';', '\'', '"' };
     }
 }

@@ -24,7 +24,7 @@ namespace Silverton.Injector {
     */
     public class InjectedExe {
 
-        public delegate int IntMain(string[] args);
+        public delegate int IntMain();
 
         string fullExePath;
         private InMemoryPE exePE;
@@ -56,14 +56,14 @@ namespace Silverton.Injector {
         }
 
         // Invoke the entry point
-        public void Execute(NativeFunctionInvoker functionInvoker, string[] arguments) {
-            this.Execute(functionInvoker, arguments, injectedPE.InMemoryPE.EntryPointAddress);
+        public void Execute(NativeFunctionInvoker functionInvoker) {
+            this.Execute(functionInvoker, injectedPE.InMemoryPE.EntryPointAddress);
         }
 
         // Invoke the entry point
-        public void Execute(NativeFunctionInvoker functionInvoker, string[] arguments, IntPtr functionAddress) {
+        public void Execute(NativeFunctionInvoker functionInvoker, IntPtr functionAddress) {
             functionInvoker.Invoke(() => {
-                this.InvokeIntMain(functionAddress, arguments);
+                this.InvokeIntMain(functionAddress);
             });
         }
 
@@ -74,11 +74,11 @@ namespace Silverton.Injector {
 
         private const uint INFINITE_TIMEOUT = 0xFFFFFFFF;
 
-        private void InvokeIntMain(IntPtr functionAddress, string[] arguments) {
+        private void InvokeIntMain(IntPtr functionAddress) {
 
             // Execute it in the same thread
             IntMain function = Marshal.GetDelegateForFunctionPointer<IntMain>(functionAddress);
-            function(arguments);
+            function();
 
             /*
             // NOTE: We want this to be invoked in a new thread so that it gets clean TLS data

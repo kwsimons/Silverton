@@ -800,7 +800,7 @@ namespace Silverton.Core.Interop {
         }
 
         public const string NTDLL_GUID_PC = "e9bf26fa-c25f-2ac5-9a4e-bbbc29569688"; // 10.0.22631.4169
-        public const string NTDLL_GUID_XBOX_4909 = "c30d51bc-364d-2253-0808-24ef4382db62"; // 10.0.25398.4909
+        public const string NTDLL_GUID_XBOX_4908_4909 = "c30d51bc-364d-2253-0808-24ef4382db62"; // 10.0.25398.4909 & 10.0.25398.4908
         public const string NTDLL_GUID_XBOX_4478 = "4a9c1d0f-33d3-b2fd-ce7d-0e4c3e5c4941"; // 10.0.25398.4478
 
         // find ntdll!LdrpModuleBaseAddressIndex variable
@@ -809,7 +809,7 @@ namespace Silverton.Core.Interop {
             switch (GetDebugGuid("ntdll.dll")) {
                 case NTDLL_GUID_PC:
                     return GetModuleHandle("ntdll.dll") + 0x187108;
-                case NTDLL_GUID_XBOX_4909:
+                case NTDLL_GUID_XBOX_4908_4909:
                 case NTDLL_GUID_XBOX_4478:
                     return GetModuleHandle("ntdll.dll") + 0x196998;
             }
@@ -821,7 +821,7 @@ namespace Silverton.Core.Interop {
             switch (GetDebugGuid("ntdll.dll")) {
                 case NTDLL_GUID_PC:
                     return GetModuleHandle("ntdll.dll") + 0x2C0BC;
-                case NTDLL_GUID_XBOX_4909:
+                case NTDLL_GUID_XBOX_4908_4909:
                 case NTDLL_GUID_XBOX_4478:
                     return GetModuleHandle("ntdll.dll") + 0x2B854;
             }
@@ -833,7 +833,7 @@ namespace Silverton.Core.Interop {
             switch (GetDebugGuid("ntdll.dll")) {
                 case NTDLL_GUID_PC:
                     return GetModuleHandle("ntdll.dll") + 0x44F8;
-                case NTDLL_GUID_XBOX_4909:
+                case NTDLL_GUID_XBOX_4908_4909:
                 case NTDLL_GUID_XBOX_4478:
                     return GetModuleHandle("ntdll.dll") + 0x63F44;
             }
@@ -845,7 +845,7 @@ namespace Silverton.Core.Interop {
             switch (GetDebugGuid("ntdll.dll")) {
                 case NTDLL_GUID_PC:
                     return GetModuleHandle("ntdll.dll") + 0x7FEEC;
-                case NTDLL_GUID_XBOX_4909:
+                case NTDLL_GUID_XBOX_4908_4909:
                     return GetModuleHandle("ntdll.dll") + 0x81DC0;
                 case NTDLL_GUID_XBOX_4478:
                     return GetModuleHandle("ntdll.dll") + 0x81E20;

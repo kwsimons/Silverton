@@ -8,7 +8,7 @@ rem The current working directory to use when invoking the command
 set CWD=C:\\
 
 rem The command we want to run
-set COMMAND=C:\windows\system32\cmd.exe
+set COMMAND=C:\windows\system32\cmd.exe %*
 
 rem Execute the command (via our custom launcher)
 %DOTNET_PATH% msbuild /nologo "%MSBUILD_XML_PATH%" ^

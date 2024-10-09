@@ -1,4 +1,5 @@
 ﻿using Silverton.Core.Interop;
+using Silverton.Core.Log;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +10,7 @@ namespace Silverton.Core.Environment {
     public class Parser {
 
         // Parse command into an executeable path and list of arguments
-        public static (string, List<string>) ParseCommand(string command, string currentWorkingDirectory) {
+        public static (string, string) ParseCommand(string command, string currentWorkingDirectory) {
 
             var arguments = ParseArguments(command);
 
@@ -20,12 +21,17 @@ namespace Silverton.Core.Environment {
             string exePath = arguments[0];
             if (!Path.IsPathRooted(exePath)) {
                 exePath = Path.Combine(currentWorkingDirectory, exePath);
+
+                // Replace the relative path with the absolute path
+                // The name of the executable in the command line that the operating system provides to a process is not necessarily identical to that in the command line that the calling process gives to the CreateProcess function.
+                // The operating system may prepend a fully qualified path to an executable name that is provided without a fully qualified path.
+                // https://learn.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-getcommandlinew#remarks
+                var oldExePath = arguments[0];
+                var offset = command.IndexOf(oldExePath);
+                command = command.Remove(offset, oldExePath.Length).Insert(offset, exePath);
             }
 
-            // Replace first argument with full path variant
-            arguments[0] = exePath;
-
-            return (exePath, arguments);
+            return (exePath, command);
         }
 
         // Parse the command line arguments
@@ -43,10 +49,10 @@ namespace Silverton.Core.Environment {
                 for (int i = 0; i < numArgs; i++) {
                     args.Add(Marshal.PtrToStringUni(Marshal.ReadIntPtr(pArgs, i * IntPtr.Size)));
                 }
-            }
-            finally {
+            } finally {
                 Marshal.FreeHGlobal(pArgs);
             }
+
             return args;
         }
 

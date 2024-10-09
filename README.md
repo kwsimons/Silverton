@@ -16,9 +16,11 @@ This library has not been tested extensively.  It does *not* handle every use ca
 
 Devices tested:
 * Xbox One X
+* Xbox Series S
 * Xbox Series X
 
 Versions supported:
+* `10.0.22621.2864`
 * `10.0.25398.4908`
 * `10.0.25398.4909`
 * `10.0.25398.4478`

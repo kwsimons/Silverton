@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Silverton.Core.Interop;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.SqlTypes;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
-using Silverton.Core.Log;
+using System.Threading;
 using static Silverton.Core.Interop.NativeBridge;
 
 namespace Silverton.Core.Managers {
@@ -14,11 +17,13 @@ namespace Silverton.Core.Managers {
 
         // Add a right to the given account
         public static void AddRightToAccount(SecurityIdentifier securityIdentifier, AccountRightsConstants accountRight) {
+            Console.WriteLine($"Adding account right '{accountRight}' ...");
             AddRightToAccount(securityIdentifier, accountRight.ToString());
         }
 
         // Add a privilege to the given account
         public static void AddPrivilegeToAccount(SecurityIdentifier securityIdentifier, AccountPrivilegeConstants privilege) {
+            Console.WriteLine($"Adding account privilege '{privilege}' ...");
             AddRightToAccount(securityIdentifier, privilege.ToString());
         }
 
@@ -48,7 +53,10 @@ namespace Silverton.Core.Managers {
                 Marshal.Copy(sid, 0, pSid, sid.Length);
                 status = LsaAddAccountRights(policyHandle, pSid, userRights, userRights.Length);
                 winErrorCode = LsaNtStatusToWinError(status);
-                if (winErrorCode != 0) {
+                if (winErrorCode == 0x521) { // ERROR_NO_SUCH_PRIVILEGE
+                    Console.WriteLine($"Right/privilege '{rightOrPrivilegeName}' does not exist");
+                    return;
+                } else if (winErrorCode != 0) {
                     throw new Exception($"LsaAddAccountRights failed for '{rightOrPrivilegeName}'", new Win32Exception((int)winErrorCode));
                 }
             }
@@ -58,7 +66,20 @@ namespace Silverton.Core.Managers {
                 LsaClose(policyHandle);
             }
 
-            Logger.Log($"Added right/privilege '{rightOrPrivilegeName}' to SID {securityIdentifier}", Logger.LogLevel.DEBUG);
+            Console.WriteLine($"Added right/privilege '{rightOrPrivilegeName}' to SID {securityIdentifier}");
+        }
+
+        // Delete an account
+        public static void DeleteAccount(string userName, string password) {
+
+            int result = NetUserDel(null, userName);
+            if (result == 0x8AD) {
+                Console.WriteLine($"User '{userName}' does not exist");
+            } else if (result != 0) {
+                throw new Exception($"NetUserDel failed with error code: 0x{result:X}");
+            } else {
+                Console.WriteLine($"Existing user '{userName}' deleted");
+            }
         }
 
         // Create an admin account with the given username and password
@@ -75,27 +96,14 @@ namespace Silverton.Core.Managers {
                 sScript_Path = null
             };
 
-            int result = NetUserDel(null, userName);
-            if (result == 0x8AD) {
-                Logger.Log($"User '{userName}' does not exist", Logger.LogLevel.DEBUG);
-            }
-            else if (result != 0) {
-                throw new Exception($"NetUserDel failed with error code: 0x{result:X}");
-            }
-            else {
-                Logger.Log($"Existing user '{userName}' deleted", Logger.LogLevel.DEBUG);
-            }
-
-            result = NetUserAdd(null, 1, ref userInfo, out _);
+            int result = NetUserAdd(null, 1, ref userInfo, out _);
             if (result == 0x8B0) {
-                Logger.Log($"User '{userName}' already exists", Logger.LogLevel.DEBUG);
-            }
-            else if (result != 0) {
+                Console.WriteLine($"User '{userName}' already exists");
+            } else if (result != 0) {
                 // 0x89A = ERROR_BAD_USERNAME
                 throw new Exception($"NetUserAdd failed with error code: 0x{result:X}");
-            }
-            else {
-                Logger.Log($"User '{userName}' created", Logger.LogLevel.DEBUG);
+            } else {
+                Console.WriteLine($"User '{userName}' created");
             }
         }
 
@@ -108,46 +116,70 @@ namespace Silverton.Core.Managers {
 
             try {
                 // Add them as an admin
+                int maxAttempts = 10;
+                for(int i=1; i<=maxAttempts; i++) {
                 var result = NetLocalGroupAddMembers(null, groupName, 3, ref membersInfo, 1);
-                if (result == 0x562) {
-                    Logger.Log($"User '{userName}' already in the administrators group", Logger.LogLevel.DEBUG);
+                    if (result == 0x562) {
+                        Console.WriteLine($"User '{userName}' already in the administrators group");
+                        return;
+                    } else if (result == 0x56B && i<maxAttempts) { // ERROR_NO_SUCH_MEMBER
+                        Console.WriteLine($"User '{userName}' not found, retrying");
+                        Thread.Sleep(2500);
+                    } else if (result != 0) {
+                        throw new Exception($"NetLocalGroupAddMembers failed with error code: 0x{result:X}");
+                    } else {
+                        Console.WriteLine($"User '{userName}' added to administrators group");
+                        return;
+                    }
                 }
-                else if (result != 0) {
-                    throw new Exception($"NetLocalGroupAddMembers failed with error code: 0x{result:X}");
-                }
-                else {
-                    Logger.Log($"User '{userName}' added to administrators group", Logger.LogLevel.DEBUG);
-                }
-            }
-            finally {
+            } finally {
                 Marshal.FreeHGlobal(membersInfo.lgrmi3_domainandname);
             }
         }
 
+        // Creates a user profile
+        public static void CreateProfile(SecurityIdentifier securityIdentifier, string userName) {
+            int MAX_PATH = 260;
+            StringBuilder path = new StringBuilder(MAX_PATH);
+            uint pathLen = (uint)path.Capacity;
+            var result = NativeBridge.CreateProfile(securityIdentifier.Value, userName, path, pathLen);
+            if(result != 0) {
+                throw new Exception($"Error creating profile: 0x{result:X} (0x{Marshal.GetLastWin32Error():X})");
+            }
+            Console.WriteLine($"Created user profile {path}");
+        }
+
+        // Deletes a user profile
+        public static void DeleteProfile(SecurityIdentifier securityIdentifier) {
+            if(!NativeBridge.DeleteProfileW(securityIdentifier.Value, null, null)) {
+                var error = Marshal.GetLastWin32Error();
+                if (error == 0x20) { // ERROR_SHARING_VIOLATION
+                    throw new Exception($"Error deleting profile: Another process is holding a file open");
+                } else {
+                    throw new Exception($"Error deleting profile: 0x{error:X}");
+                }
+            }
+            Console.WriteLine($"Deleted user profile");
+        }
+
         // Retrieve the local users
-        public static List<string> ListLocalUsers() {
-            List<string> localUsers = new List<string>();
+        public static Dictionary<string, uint> ListLocalUsers() {
+            Dictionary<string, uint> userNametoSid = new Dictionary<string, uint>();
 
             // Call NetUserEnum function
             IntPtr buffer;
             int entriesRead, totalEntries;
             int resumeHandle;
 
-            int result = NetUserEnum(null, 0, FILTER_NORMAL_ACCOUNT, out buffer, -1, out entriesRead, out totalEntries, out resumeHandle);
+            int result = NetUserEnum(null, 20, FILTER_NORMAL_ACCOUNT, out buffer, -1, out entriesRead, out totalEntries, out resumeHandle);
             try {
                 if (result == NERR_Success) {
-                    // Get the array of USER_INFO_0 structures
-                    USER_INFO_0[] userInfos = new USER_INFO_0[entriesRead];
                     IntPtr iter = buffer;
 
                     for (int i = 0; i < entriesRead; i++) {
-                        userInfos[i] = (USER_INFO_0)Marshal.PtrToStructure(iter, typeof(USER_INFO_0));
-                        iter += Marshal.SizeOf(typeof(USER_INFO_0));
-                    }
-
-                    // Add the usernames to the list
-                    foreach (USER_INFO_0 userInfo in userInfos) {
-                        localUsers.Add(userInfo.name);
+                        USER_INFO_23 userInfo = (USER_INFO_23)Marshal.PtrToStructure(iter, typeof(USER_INFO_23));
+                        userNametoSid.Add(userInfo.name, userInfo.sid);
+                        iter += Marshal.SizeOf(typeof(USER_INFO_23));
                     }
                 }
             }
@@ -156,7 +188,7 @@ namespace Silverton.Core.Managers {
                 NetApiBufferFree(buffer);
             }
 
-            return localUsers;
+            return userNametoSid;
         }
     }
 }

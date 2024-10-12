@@ -22,7 +22,7 @@
 		<!-- Semi-colon separated list of absolute directories which will be exempt from being injected, instead loading natively -->
 		<NativeExecutionDirectories>C:\Windows\System32\;M:\Windows\System32\;S:\Windows\System32\;T:\Windows\System32\</NativeExecutionDirectories>
 		<!-- Semi-colon separated list of absolute file paths which will supercede the native loading and force injection -->
-		<NativeExecutionBlockList>C:\Windows\System32\cmd.exe;C:\Windows\System32\conhost.exe</NativeExecutionBlockList>
+		<NativeExecutionBlockList>C:\Windows\System32\cmd.exe;C:\Windows\System32\conhost.exe;C:\Windows\System32\OpenSSH</NativeExecutionBlockList>
 	</PropertyGroup>
 
 	<UsingTask

@@ -87,11 +87,11 @@ Configurations:
 
 ### `initialize.xml`
 
-This is the MSBuild project file, it is used by the `dotnet.exe msbuild` command to invoke the Launcher.
+This is the MSBuild project file, it is used by the `dotnet.exe msbuild` command to invoke the Launcher.  It contains configuration that can allow for control over which executables are loaded natively vs injected via Silverton.  This is helpful when you do not want to inject signed code in order to ensure things run correctly.
 
 Configurations:
 * `NativeExecutionDirectories`: A semi-colon delimited list of absolute directory paths whose files will be loaded *natively* (not loaded by this tool)
-* `NativeExecutionBlockList`: A semi-colon delimited list of absolute file paths of files that will *always* be loaded by our tool, regardless of their presence in the `NativeExecutionDirectories` directories.
+* `NativeExecutionBlockList`: A semi-colon delimited list of absolute directory/file paths of files that will *always* be loaded by our tool, regardless of their presence in the `NativeExecutionDirectories` directories.
 
 NOTE: All other properties in this file can be ignored when not invoking the MSBuild command directly.
 
@@ -168,7 +168,6 @@ PE/Dll loader support:
 
 ## TODO
 
-* Add support for `10.0.25398.4908`
 * Port the PE/Dll injection part of this library to not rely on a CLR to run (eg C++)
 * Invoke the executable in a new thread
 * Properly detect when a native exe can be invoked without injection

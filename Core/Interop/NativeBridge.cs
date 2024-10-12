@@ -2332,10 +2332,41 @@ namespace Silverton.Core.Interop {
             [MarshalAs(UnmanagedType.LPWStr)] public string sScript_Path;
         }
 
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct USER_INFO_23 {
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string name;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string fullName;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string comment;
+            public uint flags;
+            public uint sid;
+        }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct LOCALGROUP_MEMBERS_INFO_3 {
             public IntPtr lgrmi3_domainandname;
         }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct LOCALGROUP_MEMBERS_INFO_0 {
+            public uint lgrmi0_sid;
+        }
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool DeleteProfileW(
+            [MarshalAs(UnmanagedType.LPWStr)] string lpszSidString,
+            [MarshalAs(UnmanagedType.LPWStr)] string lpszProfilePath,
+            [MarshalAs(UnmanagedType.LPWStr)] string lpszComputerName
+        );
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern int CreateProfile(
+            [MarshalAs(UnmanagedType.LPWStr)] string pszUserSid,
+            [MarshalAs(UnmanagedType.LPWStr)] string pszUserName,
+            [Out][MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszProfilePath,
+            uint cchProfilePath
+        );
     }
 }

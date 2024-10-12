@@ -25,7 +25,7 @@ namespace Silverton.Interceptor {
     public class NewProcessInterceptor {
 
         private List<string> nativeExecutionDirectories = new List<string>();
-        private Dictionary<string, bool> nativeExecutionBlocklist = new Dictionary<string, bool>();
+        private List<string> nativeExecutionBlocklist = new List<string>();
 
         private string dotNetPath = @"";
         private string initializeXmlPath = @"";
@@ -36,9 +36,7 @@ namespace Silverton.Interceptor {
             this.initializeXmlPath = initializeXmlPath;
             this.launcherDirectory = launcherDirectory;
             this.nativeExecutionDirectories = new List<string>(nativeExecutionDirectories);
-            foreach (var exePath in nativeExecutionBlocklist) {
-                this.nativeExecutionBlocklist[exePath.ToLower()] = true;
-            }
+            this.nativeExecutionBlocklist = new List<string>(nativeExecutionBlocklist);
         }
 
         // Patch the environment variable block of the new process
@@ -124,7 +122,7 @@ namespace Silverton.Interceptor {
 
                 // Don't intercept signed exe's that *should* run on the Xbox, unless its in our blocklist
                 // Example uses of blocklist are native executables that create processes for unsigned code, like cmd.exe & conhost.exe
-                if (nativeExecutionDirectories.Any(dir => exeName.ToLower().StartsWith(dir.ToLower())) && !nativeExecutionBlocklist.ContainsKey(exeName)) { // && FileIntegrity.IsSignedByOS(exeName)){ // TODO <-- Don't rely on heuristics, figure out how Xbox determines which EXEs can execute
+                if (nativeExecutionDirectories.Any(dir => exeName.ToLower().StartsWith(dir.ToLower())) && !nativeExecutionBlocklist.Any(dir => exeName.ToLower().StartsWith(dir.ToLower()))) { // && FileIntegrity.IsSignedByOS(exeName)){ // TODO <-- Don't rely on heuristics, figure out how Xbox determines which EXEs can execute
                     Logger.Log($"Not intercepting process creation: {exeName}");
                     return (lpApplicationName, lpCommandLine);
                 }

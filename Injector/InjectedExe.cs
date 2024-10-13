@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Silverton.Core.Log;
+using System;
 using System.Runtime.InteropServices;
 
 /*

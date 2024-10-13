@@ -1,10 +1,10 @@
 ﻿using Silverton.Core.Interop;
 using Silverton.Core.Log;
+using Silverton.Interceptor;
 using System;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
-using static Silverton.Interceptor.NativeFunctionInterceptor;
 
 /*
  * TODO:
@@ -24,6 +24,7 @@ namespace Silverton.Injector {
             this.nativeLoadLibraryExWAddress = nativeLoadLibraryExWAddress;
             //this.nativeLoadLibraryExW = Marshal.GetDelegateForFunctionPointer<LoadLibraryExW>(nativeLoadLibraryExWAddress);
             this.functionInvoker = functionInvoker;
+            NativeBridge.SetDllDirectory(searchPath);
         }
 
         public IntPtr LoadLibrary(string dllName, int dwFlags) {
@@ -57,6 +58,9 @@ namespace Silverton.Injector {
                 if (moduleHandle != IntPtr.Zero) {
                     if (!alreadyLoaded) {
                         Logger.Log($"Natively loaded {dllName}");
+
+                        // Dll loaded callbacks
+                        PostDllLoadCallback(Path.GetFileName(dllFullPath));
                     }
                     return moduleHandle;
                 }
@@ -66,7 +70,7 @@ namespace Silverton.Injector {
                 // 0x05 = ERROR_ACCESS_DENIED
                 // 0x7E = ERROR_MOD_NOT_FOUND
                 if ((errorCode == 0x03 || errorCode == 0x05 || errorCode == 0x7E) && File.Exists(dllFullPath)) {
-                    Logger.Log($"OS code integrity check failure: {dllName}");
+                    Logger.Log($"OS code integrity check failure (0x{errorCode:X}): {dllName}");
                 } else {
                     //Logger.Log($"Could not natively load library for {dllName}", Logger.LogLevel.ERROR);
                     throw new Win32Exception(errorCode, $"Could not natively load library for {dllName}: 0x{errorCode:X}");
@@ -132,9 +136,16 @@ namespace Silverton.Injector {
             // Inject the dll
             var injectedPE = InjectedPE.Inject(inMemoryPE, fullPath, this.functionInvoker);
 
+            // Dll loaded callbacks
+            PostDllLoadCallback(Path.GetFileName(fullPath));
+
             return injectedPE;
         }
-        
+
+        private void PostDllLoadCallback(string dllName) {
+            NativeFunctionInterceptor.InstallCustomDllIntercepts(dllName);
+        }
+
         [UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet = CharSet.Unicode)]
         public delegate IntPtr LoadLibraryExW(string lpFileName, IntPtr hFile, int dwFlags);
     }

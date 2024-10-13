@@ -89,16 +89,18 @@ namespace Silverton {
             // Override native API calls to redirect to our custom implementations
             NativeFunctionInterceptor.InstallIntercepts(dllResolver, newProcessInterceptor);
 
+            // Resolve / inject the exe
+            injectedExe.Resolve(functionInvoker, dllResolver);
+
             Logger.Log($"\n");
             Logger.Log($"#################################");
             Logger.Log($"############ native main({fullExePath}) #############");
             Logger.Log($"#################################");
 
-            // Resolve / inject the exe
-            injectedExe.Resolve(functionInvoker, dllResolver);
-
             // Invoke!
             injectedExe.Execute(functionInvoker);
+
+            Logger.Log($"Native executable completed with code 0x{Environment.ExitCode}", Logger.LogLevel.DEBUG);
         }
 
         // Used in tests, installs intercepts so new processes launched will be intercepted.

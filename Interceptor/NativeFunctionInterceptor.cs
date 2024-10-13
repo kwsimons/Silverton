@@ -34,6 +34,10 @@ namespace Silverton.Interceptor {
         private static CreateProcessWithLogonW kernelbase_CreateProcessWithLogonW = null;
         // TODO: kernel32.dll!CreateProcessInternalA ?
         // TODO: kernel32.dll!CreateProcessInternalW ?
+        private static XpalIsCapabilityEnabled xpal_XpalIsCapabilityEnabled = null;
+        private static XpalIsCapabilityEnabledByVm xpal_XpalIsCapabilityEnabledByVm = null;
+        private static XIsCapabilityEnabled xpal_XIsCapabilityEnabled = null;
+        private static XIsCapabilityEnabledByVm xpal_XCapabilityEnabledByVm = null;
 
         public static IntPtr GetNativeLoadLibraryAddress() {
             // Get the original LoadLibrary function address to allow for native loading later
@@ -58,6 +62,18 @@ namespace Silverton.Interceptor {
 
             interceptsInstalled = true;
             Logger.Log($"Intercepts installed", Logger.LogLevel.DEBUG);
+        }
+
+        public static void InstallCustomDllIntercepts(string dllName) {
+            switch (dllName.ToLower()) {
+                case "xpal.dll":
+                    xpal_XpalIsCapabilityEnabled = NativeFunctionInterceptor.HookFunctionCall(dllName, "XpalIsCapabilityEnabled", XpalIsCapabilityEnabled_Intercept);
+                    xpal_XpalIsCapabilityEnabledByVm = NativeFunctionInterceptor.HookFunctionCall(dllName, "XpalIsCapabilityEnabledByVm", XpalIsCapabilityEnabledByVm_Intercept);
+                    xpal_XIsCapabilityEnabled = NativeFunctionInterceptor.HookFunctionCall(dllName, "XIsCapabilityEnabled", XIsCapabilityEnabled_Intercept);
+                    xpal_XCapabilityEnabledByVm = NativeFunctionInterceptor.HookFunctionCall(dllName, "XIsCapabilityEnabledByVm", XIsCapabilityEnabledByVm_Intercept);
+                    Logger.Log($"xpal.dll intercepts installed", Logger.LogLevel.DEBUG);
+                    break;
+            }
         }
 
         private static LoadLibraryW LoadLibraryW_Intercept(DllLoader dllResolver, IntPtr nativeFunctionAddress) {
@@ -379,6 +395,128 @@ namespace Silverton.Interceptor {
             };
         }
 
+        private static XpalIsCapabilityEnabled XpalIsCapabilityEnabled_Intercept(IntPtr nativeFunctionAddress) {
+            return (uint capabilityId) => {
+                try {
+                    Logger.Log($"######### HIJACK XpalIsCapabilityEnabled ##########", Logger.LogLevel.DEBUG);
+                    Logger.Log($"capabilityId: 0x{capabilityId:X}", Logger.LogLevel.DEBUG);
+
+                    // Invoke the native way and log the response
+                    var nativeFn = Marshal.GetDelegateForFunctionPointer<XpalIsCapabilityEnabled>(nativeFunctionAddress);
+                    var result = nativeFn(capabilityId);
+                    uint errorCode = (uint)Marshal.GetLastWin32Error();
+                    Logger.Log($"XpalIsCapabilityEnabled(0x{capabilityId:X}) result: {result} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
+
+                    // Return true always
+                    Logger.Log($"Forcing XpalIsCapabilityEnabled(0x{capabilityId:X}) to return true", Logger.LogLevel.INFO);
+                    SetLastError(0);
+                    return true;
+                }
+                catch (Exception e) {
+                    Logger.Log($"Error invoking XpalIsCapabilityEnabled(0x{capabilityId:X}):\n{e.ToString()}\n", Logger.LogLevel.ERROR);
+                    SetLastError(0xDEAD);
+                    return false;
+                }
+            };
+        }
+
+        private static XpalIsCapabilityEnabledByVm XpalIsCapabilityEnabledByVm_Intercept(IntPtr nativeFunctionAddress) {
+            return (uint capabilityId, uint cpuIdLeaf) => {
+                try {
+                    Logger.Log($"######### HIJACK XpalIsCapabilityEnabledByVm ##########", Logger.LogLevel.DEBUG);
+                    Logger.Log($"capabilityId: 0x{capabilityId:X}", Logger.LogLevel.DEBUG);
+                    Logger.Log($"cpuIdLeaf: 0x{cpuIdLeaf:X}", Logger.LogLevel.DEBUG);
+
+                    // Invoke the native way and log the response
+                    var nativeFn = Marshal.GetDelegateForFunctionPointer<XpalIsCapabilityEnabledByVm>(nativeFunctionAddress);
+                    var result = nativeFn(capabilityId, cpuIdLeaf);
+                    uint errorCode = (uint)Marshal.GetLastWin32Error();
+                    Logger.Log($"XpalIsCapabilityEnabled(0x{capabilityId:X}, 0x{cpuIdLeaf:X}) result: {result} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
+
+                    // Return true always
+                    Logger.Log($"Forcing XpalIsCapabilityEnabled(0x{capabilityId:X}, 0x{cpuIdLeaf:X}) to return true", Logger.LogLevel.INFO);
+                    SetLastError(0);
+                    return true;
+                }
+                catch (Exception e) {
+                    Logger.Log($"Error invoking XpalIsCapabilityEnabled(0x{capabilityId:X}):\n{e.ToString()}\n", Logger.LogLevel.ERROR);
+                    SetLastError(0xDEAD);
+                    return false;
+                }
+            };
+        }
+
+        private static XIsCapabilityEnabled XIsCapabilityEnabled_Intercept(IntPtr nativeFunctionAddress) {
+            return (uint capabilityId) => {
+                try {
+                    Logger.Log($"######### HIJACK XIsCapabilityEnabled ##########", Logger.LogLevel.DEBUG);
+                    Logger.Log($"capabilityId: 0x{capabilityId:X}", Logger.LogLevel.DEBUG);
+
+                    // Invoke the native way and log the response
+                    var nativeFn = Marshal.GetDelegateForFunctionPointer<XIsCapabilityEnabled>(nativeFunctionAddress);
+                    var result = nativeFn(capabilityId);
+                    uint errorCode = (uint)Marshal.GetLastWin32Error();
+                    Logger.Log($"XIsCapabilityEnabled(0x{capabilityId:X}) result: {result} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
+
+                    // Return true always
+                    Logger.Log($"Forcing XIsCapabilityEnabled(0x{capabilityId:X}) to return true", Logger.LogLevel.INFO);
+                    SetLastError(0);
+                    return true;
+                }
+                catch (Exception e) {
+                    Logger.Log($"Error invoking XIsCapabilityEnabled(0x{capabilityId:X}):\n{e.ToString()}\n", Logger.LogLevel.ERROR);
+                    SetLastError(0xDEAD);
+                    return false;
+                }
+            };
+        }
+
+        private static XIsCapabilityEnabledByVm XIsCapabilityEnabledByVm_Intercept(IntPtr nativeFunctionAddress) {
+            return (uint capabilityId, uint cpuIdLeaf) => {
+                try {
+                    Logger.Log($"######### HIJACK XpalIsCapabilityEnabledByVm ##########", Logger.LogLevel.DEBUG);
+                    Logger.Log($"capabilityId: 0x{capabilityId:X}", Logger.LogLevel.DEBUG);
+                    Logger.Log($"cpuIdLeaf: 0x{cpuIdLeaf:X}", Logger.LogLevel.DEBUG);
+
+                    // Invoke the native way and log the response
+                    var nativeFn = Marshal.GetDelegateForFunctionPointer<XIsCapabilityEnabledByVm>(nativeFunctionAddress);
+                    var result = nativeFn(capabilityId, cpuIdLeaf);
+                    uint errorCode = (uint)Marshal.GetLastWin32Error();
+                    Logger.Log($"XIsCapabilityEnabledByVm(0x{capabilityId:X}, 0x{cpuIdLeaf:X}) result: {result} (Error Code: 0x{errorCode:X})", Logger.LogLevel.DEBUG);
+
+                    // Return true always
+                    Logger.Log($"Forcing XIsCapabilityEnabledByVm(0x{capabilityId:X}, 0x{cpuIdLeaf:X}) to return true", Logger.LogLevel.INFO);
+                    SetLastError(0);
+                    return true;
+                }
+                catch (Exception e) {
+                    Logger.Log($"Error invoking XIsCapabilityEnabledByVm(0x{capabilityId:X}):\n{e.ToString()}\n", Logger.LogLevel.ERROR);
+                    SetLastError(0xDEAD);
+                    return false;
+                }
+            };
+        }
+
+        private delegate T HijackedFunctionCall<T>(IntPtr functionAddress);
+
+        private static T HookFunctionCall<T>(string dllName, string functionName, HijackedFunctionCall<T> interceptFunctionFactory) {
+
+            // Get the original function address
+            IntPtr module = GetModuleHandle(dllName);
+            IntPtr nativeFunctionAddress = GetProcAddress(module, functionName);
+
+            // Create our hijacked callback, with a reference to the original
+            T interceptFunction = interceptFunctionFactory(nativeFunctionAddress);
+            IntPtr hijackedFunctionAddress = Marshal.GetFunctionPointerForDelegate(interceptFunction);
+
+            Logger.Log($"Diverted function address {dllName}!{functionName} from 0x{nativeFunctionAddress:X} to 0x{hijackedFunctionAddress:X} for module 0x{module:X}", Logger.LogLevel.DEBUG);
+
+            // Patch all loaded DLLs Import Address Tables(IAT) references to LoadLibrary / CreateProcess
+            PatchImportCalls(dllName, functionName, hijackedFunctionAddress);
+
+            return interceptFunction;
+        }
+
         private delegate T HijackedLoadLibrary<T>(DllLoader dllResolver, IntPtr functionAddress);
 
         private static T HookLoadLibrary<T>(string dllName, string functionName, DllLoader dllResolver, HijackedLoadLibrary<T> interceptFunctionFactory) {
@@ -518,13 +656,24 @@ namespace Silverton.Interceptor {
             IntPtr lpStartupInfo,
             ref PROCESS_INFORMATION lpProcessInformation);
 
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+        public delegate bool XpalIsCapabilityEnabled(uint capabilityId);
+
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+        public delegate bool XpalIsCapabilityEnabledByVm(uint capabilityId, uint cpuIdLeaf);
+
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+        public delegate bool XIsCapabilityEnabled(uint capabilityId);
+
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+        public delegate bool XIsCapabilityEnabledByVm(uint capabilityId, uint cpuIdLeaf);
 
         // ##############################################################################################################################
         // ##############################################################################################################################
         // ##############################################################################################################################
 
         // Where, in the in-memory PE, to begin writing the trampolines
-        private static Dictionary<string, int> TRAMPOLINE_FUNCTION_OFFSETS = new Dictionary<string, int>() { {"kernelbase.dll", 0x400}, {"advapi32.dll", 0x400}, };
+        private static Dictionary<string, int> TRAMPOLINE_FUNCTION_OFFSETS = new Dictionary<string, int>() { {"kernelbase.dll", 0x400}, {"advapi32.dll", 0x400}, { "xpal.dll", 0x400 }, };
 
         /*
          * Modifies the loaded in-memory PEs in order to intercept and redirect the given function calls.

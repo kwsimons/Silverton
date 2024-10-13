@@ -799,7 +799,8 @@ namespace Silverton.Core.Interop {
             return function(PEBLoaderDataTableEntryAddress, out removedTlsEntry);
         }
 
-        public const string NTDLL_GUID_PC = "e9bf26fa-c25f-2ac5-9a4e-bbbc29569688"; // 10.0.22631.4169
+        public const string NTDLL_GUID_PC_10_0_22631_4169 = "e9bf26fa-c25f-2ac5-9a4e-bbbc29569688"; // 10.0.22631.4169
+        public const string NTDLL_GUID_PC_10_0_22631_4317 = "fb228b94-3d71-8a04-2641-5a200e27cb76"; // 10.0.22631.4317
         public const string NTDLL_GUID_XBOX_2864 = "dcb12335-6c21-d9d2-6072-ad27af83e1aa"; // 10.0.22621.2864 (Nov 2022)
         public const string NTDLL_GUID_XBOX_4908_4909 = "c30d51bc-364d-2253-0808-24ef4382db62"; // 10.0.25398.4909 & 10.0.25398.4908
         public const string NTDLL_GUID_XBOX_4478 = "4a9c1d0f-33d3-b2fd-ce7d-0e4c3e5c4941"; // 10.0.25398.4478
@@ -808,7 +809,9 @@ namespace Silverton.Core.Interop {
         // TODO: Make this more portable: https://www.mdsec.co.uk/2021/06/bypassing-image-load-kernel-callbacks/
         public static IntPtr GetLdrpModuleBaseAddressIndexAddress() {
             switch (GetDebugGuid("ntdll.dll")) {
-                case NTDLL_GUID_PC:
+                case NTDLL_GUID_PC_10_0_22631_4169:
+                    return GetModuleHandle("ntdll.dll") + 0x187108;
+                case NTDLL_GUID_PC_10_0_22631_4317:
                     return GetModuleHandle("ntdll.dll") + 0x187108;
                 case NTDLL_GUID_XBOX_2864:
                     return GetModuleHandle("ntdll.dll") + 0x185008;
@@ -822,8 +825,10 @@ namespace Silverton.Core.Interop {
         // find ntdll!RtlInsertInvertedFunctionTable method
         public static IntPtr GetRtlInsertInvertedFunctionTableAddress() {
             switch (GetDebugGuid("ntdll.dll")) {
-                case NTDLL_GUID_PC:
+                case NTDLL_GUID_PC_10_0_22631_4169:
                     return GetModuleHandle("ntdll.dll") + 0x2C0BC;
+                case NTDLL_GUID_PC_10_0_22631_4317:
+                    return GetModuleHandle("ntdll.dll") + 0x2C09C;
                 case NTDLL_GUID_XBOX_2864:
                     return GetModuleHandle("ntdll.dll") + 0x2C2AC;
                 case NTDLL_GUID_XBOX_4908_4909:
@@ -836,7 +841,9 @@ namespace Silverton.Core.Interop {
         // find ntdll!LdrpHandleTlsData method
         public static IntPtr GetLdrpHandleTlsDataAddress() {
             switch (GetDebugGuid("ntdll.dll")) {
-                case NTDLL_GUID_PC:
+                case NTDLL_GUID_PC_10_0_22631_4169:
+                    return GetModuleHandle("ntdll.dll") + 0x44F8;
+                case NTDLL_GUID_PC_10_0_22631_4317:
                     return GetModuleHandle("ntdll.dll") + 0x44F8;
                 case NTDLL_GUID_XBOX_2864:
                     return GetModuleHandle("ntdll.dll") + 0x4564;
@@ -850,7 +857,9 @@ namespace Silverton.Core.Interop {
         // find ntdll!LdrpReleaseTlsEntry method
         public static IntPtr GetLdrpReleaseTlsEntryAddress() {
             switch (GetDebugGuid("ntdll.dll")) {
-                case NTDLL_GUID_PC:
+                case NTDLL_GUID_PC_10_0_22631_4169:
+                    return GetModuleHandle("ntdll.dll") + 0x7FEEC;
+                case NTDLL_GUID_PC_10_0_22631_4317:
                     return GetModuleHandle("ntdll.dll") + 0x7FEEC;
                 case NTDLL_GUID_XBOX_2864:
                     return GetModuleHandle("ntdll.dll") + 0x7F7AC;
@@ -884,22 +893,11 @@ namespace Silverton.Core.Interop {
                 throw new Exception($"No debug directory for {dllName}");
             }
 
-            Logger.Log($"pe.OptionalHeader64.Debug.VirtualAddress = 0x{pe.OptionalHeader64.Debug.VirtualAddress:X}", Logger.LogLevel.TRACE);
             for (var pDebugDirectory = new IntPtr(moduleHandle.ToInt64() + pe.OptionalHeader64.Debug.VirtualAddress);
                 pDebugDirectory.ToInt64() < (moduleHandle.ToInt64() + pe.OptionalHeader64.Debug.VirtualAddress + pe.OptionalHeader64.Debug.Size);
                 pDebugDirectory += Marshal.SizeOf<IMAGE_DEBUG_DIRECTORY>()) {
 
-                Logger.Log($"pDebugDirectory = 0x{pDebugDirectory:X}", Logger.LogLevel.TRACE);
                 var debugDirectory = Marshal.PtrToStructure<IMAGE_DEBUG_DIRECTORY>(pDebugDirectory);
-
-                Logger.Log($"debugDirectory.Characteristics = 0x{debugDirectory.Characteristics:X}", Logger.LogLevel.TRACE);
-                Logger.Log($"debugDirectory.TimeDateStamp = 0x{debugDirectory.TimeDateStamp:X}", Logger.LogLevel.TRACE);
-                Logger.Log($"debugDirectory.MajorVersion = 0x{debugDirectory.MajorVersion:X}", Logger.LogLevel.TRACE);
-                Logger.Log($"debugDirectory.MinorVersion = 0x{debugDirectory.MinorVersion:X}", Logger.LogLevel.TRACE);
-                Logger.Log($"debugDirectory.Type = 0x{debugDirectory.Type:X}", Logger.LogLevel.TRACE);
-                Logger.Log($"debugDirectory.SizeOfData = 0x{debugDirectory.SizeOfData:X}", Logger.LogLevel.TRACE);
-                Logger.Log($"debugDirectory.AddressOfRawData = 0x{debugDirectory.AddressOfRawData:X}", Logger.LogLevel.TRACE);
-                Logger.Log($"debugDirectory.PointerToRawData = 0x{debugDirectory.PointerToRawData:X}", Logger.LogLevel.TRACE);
 
                 if (debugDirectory.Type == 0x02) { // IMAGE_DEBUG_TYPE_CODEVIEW
 
@@ -908,8 +906,6 @@ namespace Silverton.Core.Interop {
                     if (rsds.CvSig != 0x53445352) {
                         throw new Exception("Expected CvSig 'RSDS'");
                     }
-                    Logger.Log($"rsds.CvSig = 0x{rsds.CvSig:X}", Logger.LogLevel.TRACE);
-                    Logger.Log($"rsds.Age = 0x{rsds.Age:X}", Logger.LogLevel.TRACE);
                     Logger.Log($"rsds.Guid = {rsds.Guid}", Logger.LogLevel.TRACE);
 
                     return rsds.Guid.ToString();
@@ -2368,5 +2364,9 @@ namespace Silverton.Core.Interop {
             [Out][MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszProfilePath,
             uint cchProfilePath
         );
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetDllDirectory(string path);
     }
 }
